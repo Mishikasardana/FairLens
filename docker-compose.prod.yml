@@ -1,0 +1,42 @@
+version: '3.9'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "80:3000"
+    environment:
+      - VITE_API_URL=https://${BACKEND_DOMAIN}
+    depends_on:
+      - backend
+    restart: always
+    networks:
+      - fairlens-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}
+      - GCS_BUCKET_NAME=${GCS_BUCKET_NAME}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - APP_ENV=production
+    restart: always
+    networks:
+      - fairlens-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  fairlens-network:
+    driver: bridge
