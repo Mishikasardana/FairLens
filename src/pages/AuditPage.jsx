@@ -1,8 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
-import { analyzeBias } from '../utils/biasEngine.js'
-import { explainMetric } from '../utils/gemini.js'
+import { runAudit, explainMetric } from '../utils/api.js'
 import { LANGUAGES } from '../i18n/index.js'
 
 const SEV_STYLES = {
@@ -32,41 +31,76 @@ function ScoreRing({ score }) {
 
 export default function AuditPage({ auditData, onNext, apiKey, reportLang }) {
   const { t } = useTranslation()
+  const [auditResult, setAuditResult] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [explanations, setExplanations] = useState({})
   const [loadingExp, setLoadingExp] = useState({})
 
   const langName = LANGUAGES.find(l => l.code === reportLang)?.geminiName || 'English'
 
-  const { findings, overallScore, criticalCount, highCount, passCount } = useMemo(() => {
-    return analyzeBias(auditData.data, auditData.sensitiveAttrs, auditData.outcomeCol)
-  }, [auditData])
-
-  const dpgFindings = findings.filter(f => f.metric === 'Demographic parity gap')
-  const dirFindings = findings.filter(f => f.metric === 'Disparate impact ratio')
+  useEffect(() => {
+    async function fetchAudit() {
+      try {
+        setLoading(true)
+        const result = await runAudit(auditData.datasetId, auditData.sensitiveAttrs, auditData.outcomeCol, langName)
+        setAuditResult(result)
+      } catch (e) {
+        setError(e.message || 'Failed to run audit')
+      }
+      setLoading(false)
+    }
+    fetchAudit()
+  }, [auditData, langName])
 
   async function explainFinding(finding) {
     const key = `${finding.attribute}-${finding.metric}`
     if (explanations[key] || loadingExp[key]) return
     setLoadingExp(prev => ({ ...prev, [key]: true }))
     try {
-      const text = await explainMetric(finding.metric, finding.value, finding.attribute, langName, apiKey)
+      const text = await explainMetric(finding.metric, finding.value, finding.attribute, langName)
       setExplanations(prev => ({ ...prev, [key]: text }))
     } catch { setExplanations(prev => ({ ...prev, [key]: 'Could not load explanation.' })) }
     setLoadingExp(prev => ({ ...prev, [key]: false }))
   }
 
+  if (loading) {
+    return (
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '2rem 1rem', textAlign: 'center' }}>
+        <p>{t('common.loading') || 'Loading...'}</p>
+      </div>
+    )
+  }
+
+  if (error || !auditResult) {
+    return (
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '2rem 1rem', textAlign: 'center' }}>
+        <p style={{ color: 'var(--red)' }}>{error || 'Failed to load audit'}</p>
+      </div>
+    )
+  }
+
+  const findings = auditResult.findings || []
+  const overallScore = auditResult.overall_score || 0
+  const criticalCount = auditResult.critical_count || 0
+  const highCount = auditResult.high_count || 0
+  const passCount = auditResult.passed_count || 0
+
+  const dpgFindings = findings.filter(f => f.metric === 'Demographic Parity Gap')
+  const dirFindings = findings.filter(f => f.metric === 'Disparate Impact Ratio')
+
   const dpgChartData = dpgFindings.map(f => ({
     name: f.attribute,
     value: parseFloat(f.value.toFixed(3)),
     severity: f.severity,
-    favored: f.favored,
-    disadvantaged: f.disadvantaged
+    favored: f.favored_group,
+    disadvantaged: f.disadvantaged_group
   }))
 
   const groupChartData = dpgFindings.flatMap(f => {
-    return Object.entries(f.groups || {}).map(([group, rate]) => ({
-      name: `${f.attribute}: ${group}`,
-      rate: parseFloat((rate * 100).toFixed(1)),
+    return (f.group_stats || []).map(stat => ({
+      name: `${f.attribute}: ${stat.group}`,
+      rate: parseFloat((stat.positive_rate * 100).toFixed(1)),
       attr: f.attribute
     }))
   })
@@ -78,7 +112,7 @@ export default function AuditPage({ auditData, onNext, apiKey, reportLang }) {
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 400, color: 'var(--ink)', marginBottom: 4 }}>{t('audit.title')}</h1>
           <p style={{ color: 'var(--ink3)', fontSize: 14 }}>{auditData.datasetName} · {auditData.rows} rows · {auditData.columns} columns</p>
         </div>
-        <button onClick={onNext} style={{ padding: '10px 22px', background: 'var(--ink)', color: 'white', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+        <button onClick={() => onNext(auditResult)} style={{ padding: '10px 22px', background: 'var(--ink)', color: 'white', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
           {t('report.title')} →
         </button>
       </div>

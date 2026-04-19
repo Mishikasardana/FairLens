@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import Papa from 'papaparse'
-import { detectSensitiveColumns } from '../utils/gemini.js'
+import { uploadDataset, detectColumns } from '../utils/api.js'
 import { LANGUAGES } from '../i18n/index.js'
 
 const TAG_COLORS = {
@@ -18,7 +18,9 @@ export default function UploadPage({ onAuditReady, apiKey, reportLang }) {
   const [parsed, setParsed] = useState(null)
   const [tags, setTags] = useState({})
   const [detecting, setDetecting] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
+  const [datasetId, setDatasetId] = useState(null)
   const fileRef = useRef()
 
   const langName = LANGUAGES.find(l => l.code === reportLang)?.geminiName || 'English'
@@ -27,6 +29,7 @@ export default function UploadPage({ onAuditReady, apiKey, reportLang }) {
     if (!f) return
     setFile(f)
     setError('')
+    setDatasetId(null)
     Papa.parse(f, {
       header: true, skipEmptyLines: true, preview: 200,
       complete: async (result) => {
@@ -36,17 +39,32 @@ export default function UploadPage({ onAuditReady, apiKey, reportLang }) {
         const autoTags = {}
         cols.forEach(c => { autoTags[c] = 'feature' })
         setTags(autoTags)
-        if (apiKey) {
+        
+        // Try to detect columns using backend
+        try {
           setDetecting(true)
-          try {
-            const detected = await detectSensitiveColumns(cols, apiKey, langName)
-            const newTags = { ...autoTags }
-            detected.sensitive?.forEach(c => { if (newTags[c] !== undefined) newTags[c] = 'sensitive' })
-            detected.outcome?.forEach(c => { if (newTags[c] !== undefined) newTags[c] = 'outcome' })
-            setTags(newTags)
-          } catch {}
-          setDetecting(false)
+          // First upload to get dataset ID for detection
+          const formData = new FormData()
+          formData.append('file', f)
+          const uploadResponse = await fetch('http://localhost:8000/api/dataset/upload', {
+            method: 'POST',
+            body: formData
+          })
+          if (!uploadResponse.ok) throw new Error('Upload failed')
+          const uploadData = await uploadResponse.json()
+          setDatasetId(uploadData.dataset_id)
+          
+          // Now detect columns
+          const detected = await detectColumns(uploadData.dataset_id, langName)
+          const newTags = { ...autoTags }
+          detected.sensitive?.forEach(c => { if (newTags[c] !== undefined) newTags[c] = 'sensitive' })
+          detected.outcome?.forEach(c => { if (newTags[c] !== undefined) newTags[c] = 'outcome' })
+          setTags(newTags)
+        } catch (e) {
+          // Silently fail - user can still tag manually
+          console.log('Auto-detection skipped:', e.message)
         }
+        setDetecting(false)
       },
       error: (err) => setError(err.message)
     })
@@ -58,16 +76,25 @@ export default function UploadPage({ onAuditReady, apiKey, reportLang }) {
   }
 
   function canRun() {
-    if (!parsed) return false
+    if (!parsed || !datasetId) return false
     const tagVals = Object.values(tags)
     return tagVals.includes('outcome') && tagVals.includes('sensitive')
   }
 
-  function runAudit() {
+  async function runAudit() {
+    if (!datasetId) return
     const cols = parsed.meta.fields
     const sensitiveAttrs = cols.filter(c => tags[c] === 'sensitive')
     const outcomeCol = cols.find(c => tags[c] === 'outcome')
-    onAuditReady({ data: parsed.data, sensitiveAttrs, outcomeCol, datasetName: file.name.replace(/\.[^.]+$/, ''), rows: parsed.data.length, columns: cols.length })
+    
+    onAuditReady({
+      datasetId,
+      sensitiveAttrs,
+      outcomeCol,
+      datasetName: file.name.replace(/\.[^.]+$/, ''),
+      rows: parsed.data.length,
+      columns: cols.length
+    })
   }
 
   const DEMO_CSV = `age,gender,race,education,experience_years,hired

@@ -30,6 +30,48 @@ OUTCOME_KEYWORDS = [
     "loan", "credit", "score", "salary", "promoted", "selected",
     "diagnosis", "admit", "hire", "approve",
 ]
+POSITIVE_OUTCOME_KEYWORDS = {
+    'yes', 'true', 'ok', '1', 'positive', 'pass', 'selected', 'accepted',
+    'approved', 'hired', 'admitted', 'success', 'win', 'eligible', 'clear'
+}
+NEGATIVE_OUTCOME_KEYWORDS = {
+    'no', 'false', '0', 'negative', 'fail', 'failed', 'rejected',
+    'denied', 'declined', 'ineligible', 'block', 'not selected', 'not approved'
+}
+
+
+def normalize_outcome_series(series: pd.Series) -> pd.Series:
+    """Convert a dataset outcome column into 0/1 values using numeric and text heuristics."""
+    text = series.astype(str).str.strip().str.lower()
+    numeric = pd.to_numeric(series, errors='coerce')
+    result = numeric.copy()
+
+    def map_label(value: str):
+        if value in POSITIVE_OUTCOME_KEYWORDS:
+            return 1.0
+        if value in NEGATIVE_OUTCOME_KEYWORDS:
+            return 0.0
+        return None
+
+    inferred = text.map(map_label)
+    result = result.where(numeric.notna(), inferred)
+
+    # If the column is binary text with two unique labels, try to infer positive/negative.
+    if result.isna().all():
+        unique = [v for v in text.unique() if v != 'nan']
+        if len(unique) == 2:
+            first, second = unique
+            if first in POSITIVE_OUTCOME_KEYWORDS or second in NEGATIVE_OUTCOME_KEYWORDS:
+                result = text.map(lambda v: 1.0 if v == first else 0.0)
+            elif second in POSITIVE_OUTCOME_KEYWORDS or first in NEGATIVE_OUTCOME_KEYWORDS:
+                result = text.map(lambda v: 1.0 if v == second else 0.0)
+            else:
+                # fallback: map the first label to 0 and the second label to 1,
+                # preserving a binary split rather than all zeros.
+                result = text.map(lambda v: 1.0 if v == second else 0.0)
+
+    result = result.fillna(0.0).astype(float)
+    return result
 
 
 def detect_sensitive_columns_heuristic(columns: List[str], sample: Optional[Dict] = None) -> Dict[str, str]:
@@ -52,10 +94,7 @@ def compute_demographic_parity_gap(df: pd.DataFrame, sensitive_col: str, outcome
     Ideal value = 0 (equal rates for all groups).
     """
     df = df.copy()
-    df[outcome_col] = pd.to_numeric(df[outcome_col], errors='coerce').fillna(
-        df[outcome_col].map(lambda x: 1 if str(x).lower() in
-            ['1','yes','true','approved','hired','accepted','positive','pass','admit','grant'] else 0)
-    )
+    df[outcome_col] = normalize_outcome_series(df[outcome_col])
 
     groups = df.groupby(sensitive_col)[outcome_col]
     rates = groups.mean().dropna()
@@ -85,10 +124,7 @@ def compute_disparate_impact_ratio(df: pd.DataFrame, sensitive_col: str, outcome
     Must be >= 0.8 to pass. Below 0.8 = adverse impact.
     """
     df = df.copy()
-    df[outcome_col] = pd.to_numeric(df[outcome_col], errors='coerce').fillna(
-        df[outcome_col].map(lambda x: 1 if str(x).lower() in
-            ['1','yes','true','approved','hired','accepted','positive','pass','admit','grant'] else 0)
-    )
+    df[outcome_col] = normalize_outcome_series(df[outcome_col])
 
     rates = df.groupby(sensitive_col)[outcome_col].mean().dropna()
     if len(rates) < 2 or rates.max() == 0:
@@ -105,7 +141,7 @@ def compute_equalized_odds_gap(df: pd.DataFrame, sensitive_col: str, outcome_col
     Approximated using actual outcomes when no model predictions available.
     """
     df = df.copy()
-    df[outcome_col] = pd.to_numeric(df[outcome_col], errors='coerce').fillna(0)
+    df[outcome_col] = normalize_outcome_series(df[outcome_col])
 
     if prediction_col and prediction_col in df.columns:
         tpr_by_group = {}
@@ -129,7 +165,7 @@ def compute_equalized_odds_gap(df: pd.DataFrame, sensitive_col: str, outcome_col
 def compute_statistical_significance(df: pd.DataFrame, sensitive_col: str, outcome_col: str) -> Dict[str, float]:
     """Chi-squared test for independence between sensitive attr and outcome."""
     df = df.copy()
-    df[outcome_col] = pd.to_numeric(df[outcome_col], errors='coerce').fillna(0).round()
+    df[outcome_col] = normalize_outcome_series(df[outcome_col]).round()
     try:
         contingency = pd.crosstab(df[sensitive_col], df[outcome_col])
         chi2, p_value, dof, expected = stats.chi2_contingency(contingency)

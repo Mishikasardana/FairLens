@@ -1,4 +1,5 @@
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 import os
 import json
 import re
@@ -8,9 +9,8 @@ from models.schemas import AuditResult, DetectColumnsResult, ReportResult, Repor
 import uuid
 import datetime
 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY", ""))
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY", ""))
 
-model = genai.GenerativeModel("gemini-1.5-pro")
 
 
 LANGUAGE_RTL = {"ar", "he", "fa", "ur"}
@@ -57,7 +57,10 @@ Respond ONLY with valid JSON (no markdown, no code blocks):
 }}"""
 
     try:
-        response = model.generate_content(prompt)
+        response = await client.aio.models.generate_content(
+            model="gemini-2.5-pro",
+            contents=prompt
+        )
         text = response.text.strip()
         text = re.sub(r'```json|```', '', text).strip()
         data = json.loads(text)
@@ -140,9 +143,10 @@ The single most important thing to do immediately.
 Be honest, direct, and compassionate. This report will be read by decision-makers who can change things."""
 
     try:
-        response = model.generate_content(
-            prompt,
-            generation_config=genai.types.GenerationConfig(
+        response = await client.aio.models.generate_content(
+            model="gemini-2.5-pro",
+            contents=prompt,
+            config=types.GenerateContentConfig(
                 temperature=0.4,
                 max_output_tokens=2500,
             )
@@ -193,7 +197,10 @@ What does this number mean in practice? Is it good or bad?
 Use a simple, memorable real-world analogy appropriate for {language_name} speakers."""
 
     try:
-        response = model.generate_content(prompt)
+        response = await client.aio.models.generate_content(
+            model="gemini-2.5-pro",
+            contents=prompt
+        )
         return response.text.strip()
     except Exception as e:
         return f"Could not generate explanation: {str(e)}"
@@ -225,7 +232,10 @@ For each fix:
 Keep it practical and actionable. Write entirely in {language_name}."""
 
     try:
-        response = model.generate_content(prompt)
+        response = await client.aio.models.generate_content(
+            model="gemini-2.5-pro",
+            contents=prompt
+        )
         return response.text.strip()
     except Exception as e:
         return f"Could not generate suggestions: {str(e)}"

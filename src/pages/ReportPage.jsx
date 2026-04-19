@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { generateBiasReport } from '../utils/gemini.js'
-import { analyzeBias } from '../utils/biasEngine.js'
+import { generateReport } from '../utils/api.js'
 import { LANGUAGES } from '../i18n/index.js'
 
 export default function ReportPage({ auditData, apiKey, reportLang }) {
@@ -12,22 +11,13 @@ export default function ReportPage({ auditData, apiKey, reportLang }) {
   const [generated, setGenerated] = useState(false)
 
   const langObj = LANGUAGES.find(l => l.code === reportLang) || LANGUAGES[0]
-  const results = analyzeBias(auditData.data, auditData.sensitiveAttrs, auditData.outcomeCol)
 
   async function generate() {
-    if (!apiKey) { setError('No API key set. Please add your Gemini API key in Settings.'); return }
     setLoading(true); setError(''); setReport('')
     try {
-      const text = await generateBiasReport({
-        datasetName: auditData.datasetName,
-        rows: auditData.rows,
-        columns: auditData.columns,
-        findings: results.findings.filter(f => f.metric !== 'Feature influence score'),
-        overallScore: results.overallScore,
-        sensitiveAttrs: auditData.sensitiveAttrs,
-        outcomeCol: auditData.outcomeCol
-      }, langObj.geminiName, apiKey)
-      setReport(text)
+      const reportData = await generateReport(auditData.audit_id, reportLang, langObj.geminiName, false)
+      const fullText = reportData.sections?.map(s => `## ${s.title}\n${s.content}`).join('\n\n') || reportData.full_text || ''
+      setReport(fullText)
       setGenerated(true)
     } catch (e) {
       setError(e.message || 'Failed to generate report')
@@ -38,15 +28,14 @@ export default function ReportPage({ auditData, apiKey, reportLang }) {
   function downloadReport() {
     const content = `FAIRLENS BIAS AUDIT REPORT
 Generated: ${new Date().toLocaleDateString()}
-Dataset: ${auditData.datasetName}
+Dataset: ${auditData.dataset_id}
 Language: ${langObj.name}
-Overall Fairness Score: ${results.overallScore}/100
 
 ${report}`
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url; a.download = `fairlens-report-${auditData.datasetName}.txt`
+    a.href = url; a.download = `fairlens-report-${auditData.dataset_id}.txt`
     a.click(); URL.revokeObjectURL(url)
   }
 
@@ -57,7 +46,7 @@ ${report}`
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 24 }}>
         <div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 400, color: 'var(--ink)', marginBottom: 4 }}>{t('report.title')}</h1>
-          <p style={{ color: 'var(--ink3)', fontSize: 14 }}>{auditData.datasetName} · Score: {results.overallScore}/100</p>
+          <p style={{ color: 'var(--ink3)', fontSize: 14 }}>{auditData.dataset_id}</p>
         </div>
         {generated && (
           <button onClick={downloadReport} style={{ padding: '10px 20px', background: 'var(--ink)', color: 'white', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>

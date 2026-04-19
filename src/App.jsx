@@ -3,11 +3,10 @@ import { useTranslation } from 'react-i18next'
 import './i18n/index.js'
 import UploadPage from './pages/UploadPage.jsx'
 import AuditPage from './pages/AuditPage.jsx'
-import FixPage from './pages/FixPage.jsx'
 import ReportPage from './pages/ReportPage.jsx'
 import LanguageSelector from './components/LanguageSelector.jsx'
 
-const STEPS = ['upload', 'audit', 'fix', 'report']
+const STEPS = ['upload', 'audit', 'report']
 
 export default function App() {
   const { t } = useTranslation()
@@ -29,6 +28,11 @@ export default function App() {
     setStep('audit')
   }
 
+  function handleAuditComplete(auditResult) {
+    setAuditData(prev => ({ ...prev, auditResult }))
+    setStep('report')
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--paper)' }}>
       <nav style={{ borderBottom: '0.5px solid var(--border)', background: 'var(--paper)', padding: '0 1.5rem', display: 'flex', alignItems: 'center', gap: 16, height: 56, position: 'sticky', top: 0, zIndex: 50 }}>
@@ -41,7 +45,7 @@ export default function App() {
           {STEPS.map((s, i) => {
             const isActive = step === s
             const isDone = STEPS.indexOf(step) > i
-            const canGo = (s === 'audit' || s === 'report') ? !!auditData : true
+            const canGo = s === 'audit' ? !!auditData : s === 'report' ? !!auditData?.auditResult : true
             return (
               <button key={s} onClick={() => canGo && setStep(s)}
                 style={{ padding: '5px 14px', border: 'none', borderRadius: 8, background: isActive ? 'var(--ink)' : 'transparent', color: isActive ? 'white' : isDone ? 'var(--accent)' : 'var(--ink3)', fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: isActive ? 500 : 400, cursor: canGo ? 'pointer' : 'default', transition: 'all 0.1s' }}>
@@ -89,9 +93,8 @@ export default function App() {
 
       <main>
         {step === 'upload' && <UploadPage onAuditReady={handleAuditReady} apiKey={apiKey} reportLang={reportLang} />}
-        {step === 'audit' && auditData && <AuditPage auditData={auditData} onNext={() => setStep('fix')} apiKey={apiKey} reportLang={reportLang} />}
-        {step === 'fix' && auditData && <FixPage auditData={auditData} onNext={() => setStep('report')} />}
-        {step === 'report' && auditData && <ReportPage auditData={auditData} apiKey={apiKey} reportLang={reportLang} />}
+        {step === 'audit' && auditData && <AuditPage auditData={auditData} onNext={handleAuditComplete} apiKey={apiKey} reportLang={reportLang} />}
+        {step === 'report' && auditData?.auditResult && <ReportPage auditData={auditData.auditResult} apiKey={apiKey} reportLang={reportLang} />}
       </main>
 
       {showKeyModal && (

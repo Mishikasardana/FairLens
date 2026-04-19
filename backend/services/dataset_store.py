@@ -18,7 +18,7 @@ def store_dataset(df: pd.DataFrame, name: str) -> str:
     dataset_id = str(uuid.uuid4())
     _datasets[dataset_id] = df.copy()
     _metadata[dataset_id] = {
-        "id": dataset_id,
+        "dataset_id": dataset_id,
         "name": name,
         "rows": len(df),
         "columns": len(df.columns),
