@@ -20,3 +20,5 @@ ENV/
 .vscode/settings.json
 firebase-debug.log
 .firebase/
+# Local Netlify folder
+.netlify
