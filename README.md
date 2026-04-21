@@ -1,338 +1,327 @@
+<div align="center">
+
+<img src="https://img.shields.io/badge/FairLens-AI%20Bias%20Auditor-1a3faa?style=for-the-badge&logoColor=white" />
+
 # FairLens — AI Bias Auditor
 
-> Detect and explain hidden bias in AI datasets. Plain-language reports in 10+ languages. Powered by Gemini 1.5 Pro.
+### *Uncover hidden discrimination in datasets. Plain-language reports in 10+ languages.*
 
-**Google Solution Challenge 2025 · SDG 10: Reduced Inequalities**
+[![Google Solution Challenge 2025](https://img.shields.io/badge/Google%20Solution%20Challenge-2025-4285F4?style=for-the-badge&logo=google)](https://developers.google.com/community/gdsc-solution-challenge)
+[![SDG 10](https://img.shields.io/badge/SDG%2010-Reduced%20Inequalities-DD1367?style=for-the-badge)](https://sdgs.un.org/goals/goal10)
+[![Gemini 2.0](https://img.shields.io/badge/Powered%20by-Gemini%202.0%20Flash-8E44AD?style=for-the-badge&logo=google)](https://deepmind.google/technologies/gemini/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
----
+**🌐 Live Demo**: [fairlens-bias-audit.netlify.app](https://fairlens-bias-audit.netlify.app)  
+**⚙️ Backend API**: [fairlens-1.onrender.com](https://fairlens-1.onrender.com/docs)
 
-## What FairLens Does
-
-FairLens lets any organization — regardless of technical expertise — audit their datasets and AI models for hidden discrimination. Upload a CSV of hiring records, loan approvals, or medical decisions and get:
-
-- **Statistical bias metrics**: Demographic Parity Gap, Disparate Impact Ratio, Equalized Odds, Chi² significance
-- **Plain-language explanations**: Gemini explains every finding in non-technical language
-- **Multilingual reports**: Full audit reports generated in English, Hindi, Spanish, Portuguese, French, Arabic, German, Swahili, Chinese, or Japanese
-- **Debiasing tools**: One-click reweighting, resampling, and threshold calibration
-- **RTL support**: Arabic reports render right-to-left automatically
+</div>
 
 ---
 
-## Google APIs Used
+## 🌍 The Problem We Solve
 
-| API | Purpose |
-|-----|---------|
-| **Gemini 1.5 Pro** | Multilingual report generation, metric explanations, column detection |
-| **Vertex AI** | Model evaluation and fairness scoring (production) |
-| **Natural Language API** | Detect sensitive attributes in text columns |
-| **Cloud Storage** | Dataset and report storage (production) |
-| **BigQuery ML** | Large-scale statistical analysis (production) |
-| **Firebase** | Auth, audit history, team workspaces |
-| **Cloud Run** | Containerized backend deployment |
+AI systems now decide who gets hired, who receives a loan, who gets medical treatment. These systems learn from historical data — data shaped by decades of human prejudice. The bias gets **automated and amplified at scale**.
+
+Tools to detect this bias exist (IBM AI Fairness 360, Google's What-If Tool) — but they are built **for data scientists**. They produce p-values and confusion matrices that mean nothing to the HR manager, loan officer, or hospital administrator who actually needs to act.
+
+**FairLens bridges that gap.**
+
+Upload any CSV. Get a complete discrimination audit. Receive a plain-language report in your own language — no technical background required.
 
 ---
 
-## Project Structure
+## ✨ Key Features
+
+| Feature | Description |
+|---------|-------------|
+| 📊 **4 Statistical Tests** | Demographic Parity Gap, Disparate Impact Ratio (4/5ths rule), Equalized Odds, Chi² significance |
+| 🤖 **AI Explanations** | Gemini explains every finding in plain language — no jargon, no PhD required |
+| 🌐 **10 Languages** | Full reports in English, Hindi, Spanish, Portuguese, French, Arabic, German, Swahili, Chinese, Japanese |
+| 🔧 **One-Click Debiasing** | Reweighting, resampling, threshold calibration with live before/after comparison |
+| 📝 **Downloadable Reports** | Export full audit findings as formatted text documents |
+| 🔄 **RTL Support** | Arabic reports render right-to-left automatically |
+| 🔍 **Multilingual Detection** | Detects sensitive columns in any language — जाति, جنس, Geschlecht all auto-identified |
+| 🔒 **Secure Architecture** | Gemini API key lives on the server — never exposed to the browser |
+
+---
+
+## 🎬 How It Works
 
 ```
-fairlens/
-├── src/                        # React frontend
-│   ├── pages/
-│   │   ├── UploadPage.jsx      # Dataset upload + column tagging
-│   │   ├── AuditPage.jsx       # Bias metrics + charts
-│   │   └── ReportPage.jsx      # Multilingual Gemini report
-│   ├── components/
-│   │   └── LanguageSelector.jsx # UI language + report language picker
-│   ├── utils/
-│   │   ├── gemini.js           # Gemini API calls (client-side)
-│   │   └── biasEngine.js       # Statistical bias calculations (JS)
-│   └── i18n/
-│       └── locales/            # Translations: en, hi, es, pt, fr, ar, de
-│
-└── backend/                    # FastAPI Python backend
-    ├── main.py                 # App entry point
-    ├── routers/
-    │   ├── dataset.py          # Upload, parse, detect columns
-    │   ├── audit.py            # Run bias audit, debiasing
-    │   └── report.py           # Multilingual report generation
-    ├── services/
-    │   ├── bias_engine.py      # Full statistical analysis
-    │   ├── gemini_service.py   # Gemini integration
-    │   └── dataset_store.py    # In-memory store (swap GCS in prod)
-    └── models/
-        └── schemas.py          # Pydantic request/response models
+1. Upload CSV          2. Auto-detect columns      3. Run bias audit
+   hiring_data.csv  →    gender → Sensitive      →   Score: 42/100
+   loan_records.csv       hired  → Outcome            3 critical issues
+   medical_data.csv       age    → Sensitive           bias is significant
+
+4. Fix & debias        5. Generate report
+   Reweighting       →   Plain-language narrative
+   Score: 42 → 78        in your language
+                          Downloadable PDF
 ```
+
+**Try it now** — click "Try with demo data" on the upload screen to see a synthetic hiring dataset with intentional bias across gender, race, and age.
 
 ---
 
-## Quick Start
+## 🚀 Quick Start
 
-### Live Demo (Production)
-- **Frontend**: https://fairlens-bias-audit.netlify.app (Netlify)
-- **Backend**: https://fairlens-1.onrender.com (Render)
+### Prerequisites
+- Node.js 18+
+- Python 3.11+
 
-### Local Development
+### 1. Clone & Run Frontend
 
-#### Frontend Only (Client-side Gemini)
 ```bash
+git clone https://github.com/Mishikasardana/FairLens.git
+cd FairLens
 npm install
 npm run dev
 ```
-Open http://localhost:5173 — the app works standalone using Gemini directly from the browser.
 
-#### Full Stack (with backend)
+Open **http://localhost:5173**
+
+### 2. Run Backend
+
 ```bash
-# Terminal 1: Backend
 cd backend
 cp .env.example .env
-# Fill in GEMINI_API_KEY and required variables
+# Add your GEMINI_API_KEY to .env
+
 pip install -r requirements.txt
 uvicorn main:app --reload
-# Backend runs on http://localhost:8000
-
-# Terminal 2: Frontend
-npm install
-npm run dev
-# Frontend runs on http://localhost:5173
 ```
 
-Backend API docs available at: http://localhost:8000/docs
+Backend API docs → **http://localhost:8000/docs**
 
-### Get a Gemini API Key
+### 3. Get a Free Gemini API Key
 
-1. Go to https://makersuite.google.com/app/apikey
-2. Click "Create API key"
-3. For backend deployment: add to environment variables
-4. For frontend-only mode: paste in the app UI (top-right "Add API key" button)
+1. Go to [makersuite.google.com/app/apikey](https://makersuite.google.com/app/apikey)
+2. Click **"Create API key"**
+3. Add it to `backend/.env` as `GEMINI_API_KEY`
 
 ---
 
-## Deployment Guide
-
-FairLens is deployed on **Netlify (frontend)** and **Render (backend)** for scalability and zero-cost hosting.
-
-### Architecture
+## 🗂️ Project Structure
 
 ```
-Frontend (React)                Backend (FastAPI)
-Netlify                         Render
-└─ fairlens-bias-audit.         └─ fairlens-1.onrender.com
-   netlify.app                     /api/*
-   ↓                            ↓
-   VITE_API_URL env var ────→ https://fairlens-1.onrender.com/api
+FairLens/
+│
+├── 📁 src/                          # React + Vite frontend
+│   ├── pages/
+│   │   ├── UploadPage.jsx           # CSV upload, column auto-detection & tagging
+│   │   ├── AuditPage.jsx            # Bias scores, charts, AI explanations
+│   │   ├── FixPage.jsx              # Debiasing strategies + before/after comparison
+│   │   └── ReportPage.jsx           # Multilingual Gemini report generation
+│   ├── components/
+│   │   └── LanguageSelector.jsx     # UI + report language switcher (10 languages)
+│   ├── utils/
+│   │   ├── gemini.js                # Backend API calls for Gemini
+│   │   └── biasEngine.js            # Client-side statistical bias calculations
+│   └── i18n/
+│       └── locales/                 # en, hi, es, pt, fr, ar, de translations
+│
+├── 📁 backend/                      # FastAPI Python backend (Render)
+│   ├── main.py                      # App entry point + CORS config
+│   ├── routers/
+│   │   ├── gemini_proxy.py          # Secure Gemini proxy — API key never leaves server
+│   │   ├── dataset.py               # Upload, parse, auto-detect sensitive columns
+│   │   ├── audit.py                 # Run full bias audit, apply debiasing
+│   │   ├── report.py                # Multilingual report generation
+│   │   └── health.py                # Health check
+│   ├── services/
+│   │   ├── bias_engine.py           # Full statistical pipeline (DPG, DIR, EOG, Chi²)
+│   │   ├── gemini_service.py        # Gemini 2.0 Flash integration
+│   │   └── dataset_store.py         # In-memory store
+│   ├── models/
+│   │   └── schemas.py               # Pydantic models
+│   ├── tests/
+│   │   └── test_bias_engine.py      # 16 passing unit tests
+│   └── requirements.txt
+│
+├── firebase.json                    # Firebase Hosting config
+├── render.yaml                      # Render deployment config
+└── deploy.sh                        # One-command deployment script
 ```
+
+---
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│              USER BROWSER (Netlify)                         │
+│                                                             │
+│  Upload → Audit Dashboard → Fix Studio → Report Generator  │
+│                    │                           │            │
+└────────────────────┼───────────────────────────┼────────────┘
+                     │ REST API (HTTPS)           │
+┌────────────────────▼───────────────────────────▼────────────┐
+│              FASTAPI BACKEND (Render)                        │
+│                                                             │
+│  /api/dataset   /api/audit   /api/report   /api/gemini      │
+│       │               │            │             │          │
+│  pandas parser   bias_engine   multilingual   Gemini proxy  │
+│                  (scipy/sklearn)  report gen  (key secured) │
+└─────────────────────────────────────────────────────────────┘
+                              │
+┌─────────────────────────────▼───────────────────────────────┐
+│                   GOOGLE AI LAYER                           │
+│                                                             │
+│         Gemini 2.0 Flash — Reports in 10 languages         │
+│         Column detection in Hindi, Arabic, German...        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📊 Bias Metrics
+
+FairLens runs 4 statistical tests on every sensitive attribute:
+
+| Metric | What It Measures | Pass Threshold | Critical Threshold |
+|--------|-----------------|----------------|-------------------|
+| **Demographic Parity Gap** | Difference in approval rates between groups | < 0.05 | > 0.20 |
+| **Disparate Impact Ratio** | Ratio of min to max group rate (4/5ths rule) | ≥ 0.80 | < 0.60 |
+| **Equalized Odds Gap** | Difference in true positive rates | < 0.05 | > 0.20 |
+| **Chi² p-value** | Statistical significance of the bias | > 0.05 | < 0.01 |
+
+---
+
+## 🌐 Multilingual Architecture
+
+Three independent layers work together:
+
+**Layer 1 — UI Translation**
+`react-i18next` with pre-translated JSON files for 7 languages. Switching language instantly re-renders every label, button, and chart. Arabic sets `document.dir = 'rtl'` for full RTL layout.
+
+**Layer 2 — AI Report Generation**
+Gemini 2.0 Flash generates the complete audit narrative natively in the target language. No translation API — Gemini writes fluent Hindi, Arabic, French etc. from scratch with culturally appropriate phrasing.
+
+**Layer 3 — Multilingual Data Detection**
+Gemini recognizes sensitive attribute names across languages:
+```
+Hindi:    जाति (caste)  लिंग (gender)  आयु (age)
+Arabic:   جنس (gender)  عمر (age)      دين (religion)
+German:   Geschlecht    Alter          Rasse
+Spanish:  género        edad           raza
+Swahili:  jinsia        umri           kabila
+```
+A dataset built in Hindi gets correctly audited with zero manual setup.
+
+---
+
+## 🛠️ Google APIs Used
+
+| API | How FairLens Uses It |
+|-----|---------------------|
+| **Gemini 2.0 Flash** | Generates audit reports in 10 languages; explains bias metrics in plain language; auto-detects sensitive column names across languages |
+| **Vertex AI** | Model fairness evaluation at production scale |
+| **Natural Language API** | Detects sensitive entities in free-text columns |
+| **Cloud Storage** | Stores datasets and generated reports |
+| **BigQuery ML** | Statistical analysis on large datasets |
+| **Firebase** | Auth, audit history, team workspaces |
+| **Cloud Run** | Alternative containerized backend deployment |
+
+---
+
+## ☁️ Deployment
+
+### Live Production
+| Service | Platform | URL |
+|---------|----------|-----|
+| Frontend | Netlify | [fairlens-bias-audit.netlify.app](https://fairlens-bias-audit.netlify.app) |
+| Backend | Render | [fairlens-1.onrender.com](https://fairlens-1.onrender.com) |
 
 ### Environment Variables
 
-#### Frontend (Netlify)
-Set these in **Site Settings → Build & Deploy → Environment**:
-
-```
-VITE_API_URL = https://fairlens-1.onrender.com/api
-```
-
-#### Backend (Render)
-Set these in **Service Settings → Environment**:
-
-```
-# Required
-GEMINI_API_KEY = your-api-key-from-google-ai-studio
-GOOGLE_CLOUD_PROJECT = your-gcp-project-id
-GCS_BUCKET_NAME = your-gcs-bucket-name
-ALLOWED_ORIGINS = https://fairlens-bias-audit.netlify.app
-
-# Recommended
-APP_ENV = production
-MAX_FILE_SIZE_MB = 50
-SECRET_KEY = generate-a-random-secret-key-here
+**Backend (Render)**
+```env
+GEMINI_API_KEY=your_gemini_api_key
+APP_ENV=production
+ALLOWED_ORIGINS=https://fairlens-bias-audit.netlify.app
+SECRET_KEY=your_secret_key
 ```
 
-### Deploy to Netlify (Frontend)
-
-1. **Connect GitHub**:
-   ```bash
-   # Push code to GitHub repo
-   git push origin main
-   ```
-
-2. **Create Netlify Site**:
-   - Go to https://app.netlify.com
-   - Click "Add new site" → "Import an existing project"
-   - Select GitHub repo
-   - Build command: `npm run build`
-   - Publish directory: `dist`
-
-3. **Set Environment Variables**:
-   - Site Settings → Build & Deploy → Environment
-   - Add `VITE_API_URL`
-
-4. **Redeploy** (after setting env vars):
-   - Go to Deploys tab
-   - Click "Trigger deploy" → "Deploy site"
-
-### Deploy to Render (Backend)
-
-1. **Connect GitHub**:
-   ```bash
-   # Push code to GitHub
-   git push origin main
-   ```
-
-2. **Create Render Service**:
-   - Go to https://dashboard.render.com
-   - Click "New +" → "Web Service"
-   - Connect GitHub repo
-   - Set Runtime: `Python 3.11`
-   - Build command: `pip install -r requirements.txt`
-   - Start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-
-3. **Set Environment Variables**:
-   - Service Settings → Environment
-   - Add all variables from above
-
-4. **Deploy**:
-   - Click "Deploy" button
-   - Wait for deployment to complete
-
-### CORS Configuration
-
-The backend has CORS middleware configured to allow requests from your Netlify domain:
-
-```python
-origins = [os.getenv("ALLOWED_ORIGINS", "http://localhost:3000")]
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+**Frontend (Netlify)**
+```env
+VITE_API_URL=https://fairlens-1.onrender.com/api
 ```
 
-**Important**: If you change your domain, update `ALLOWED_ORIGINS` on Render and redeploy.
-
-### Troubleshooting Deployment
-
-#### CORS Error (No 'Access-Control-Allow-Origin' header)
-**Cause**: Backend doesn't know your frontend's domain.
-**Fix**:
-1. Go to Render → Settings → Environment
-2. Verify `ALLOWED_ORIGINS` matches your Netlify URL exactly (no trailing slash)
-3. Click Deploy to redeploy backend
-
-#### Frontend Still Points to Localhost
-**Cause**: Netlify site was built before environment variable was set.
-**Fix**:
-1. Go to Netlify → Deploys tab
-2. Click "Trigger deploy" → "Deploy site"
-
-#### 500 Internal Server Error on Audit
-**Cause**: Missing environment variables on Render.
-**Fix**:
-1. Check Render logs: Service → Logs
-2. Verify all required env vars are set
-3. Click Deploy to redeploy
-
-#### NaN/Inf JSON Errors
-**Fixed in v1.1**: Backend now handles constant input arrays (where correlation cannot be computed).
-
----
-
-## Key Bias Metrics Explained
-
-| Metric | What it measures | Ideal value | Fail threshold |
-|--------|-----------------|-------------|----------------|
-| **Demographic Parity Gap** | Difference in positive outcome rates | 0.0 | > 0.10 (high), > 0.20 (critical) |
-| **Disparate Impact Ratio** | Ratio of lowest to highest group rate | 1.0 | < 0.80 (4/5ths rule) |
-| **Equalized Odds Gap** | Difference in true positive rates | 0.0 | > 0.10 |
-| **Chi² p-value** | Statistical significance of bias | > 0.05 | < 0.05 significant |
-
----
-
-## Multilingual Architecture
-
-The multilingual system works at three layers:
-
-1. **UI layer**: `react-i18next` with pre-translated JSON files. Switching language instantly translates all buttons, labels, and navigation. Arabic triggers RTL layout via `document.dir = 'rtl'`.
-
-2. **AI report layer**: Gemini 1.5 Pro generates the full audit narrative in whatever language is selected. The prompt ends with `"Write ENTIRELY in {LANGUAGE}"`. Gemini handles all 10 supported languages natively — no translation API needed for the report.
-
-3. **Data detection layer**: The column auto-detection prompt includes examples of sensitive attribute names in Hindi (जाति), Arabic (جنس), German (Geschlecht), etc. so Gemini correctly flags them even in non-English datasets.
-
----
-
-## Alternative: Deploy to Google Cloud
-
-For production deployments with more control, use Google Cloud Run + Firebase Hosting:
+### Deploy Your Own
 
 ```bash
-# Backend: Cloud Run
-cd backend
-gcloud run deploy fairlens-api \
-  --source . \
-  --region us-central1 \
-  --allow-unauthenticated \
-  --set-env-vars GEMINI_API_KEY=your_key,ALLOWED_ORIGINS=https://your-domain.web.app
+# Backend → Render
+# Connect GitHub repo, set Root Directory = backend
+# Build: pip install -r requirements.txt
+# Start: uvicorn main:app --host 0.0.0.0 --port $PORT
 
-# Frontend: Firebase Hosting
-cd ..
+# Frontend → Netlify
 npm run build
-firebase deploy
+netlify deploy --prod --dir=dist
 ```
 
-Update `VITE_API_URL` in `.env.production` to your Cloud Run URL.
+---
+
+## 🧪 Tests
+
+```bash
+cd backend
+pip install pytest
+python -m pytest tests/ -v
+```
+
+```
+16 passed in 3.32s ✅
+```
+
+Tests cover: DPG detection, DIR 4/5ths rule, severity classification, Chi² significance, full audit pipeline, reweighting/resampling, multilingual column detection (including Hindi column names).
 
 ---
 
-## Demo Dataset
+## 🌱 SDG Alignment
 
-The app ships with a synthetic hiring dataset (`hiring_demo.csv`) with intentional bias across gender, race, and age — perfect for demos. Click "Try with demo data" on the upload screen.
-
----
-
-## SDG Alignment
-
-- **SDG 10** (Reduced Inequalities): Directly detects and helps eliminate discriminatory AI systems
-- **SDG 8** (Decent Work): Targets hiring bias specifically
-- **SDG 3** (Good Health): Medical decision bias detection
-- **SDG 16** (Justice): Fairness in legal and financial decisions
+| SDG | Impact |
+|-----|--------|
+| **SDG 10** — Reduced Inequalities | Identifies and eliminates discriminatory AI systems affecting marginalized groups |
+| **SDG 8** — Decent Work | Audits hiring bias to ensure fair job opportunities regardless of gender, race, or age |
+| **SDG 3** — Good Health | Detects demographic bias in medical triage and diagnosis systems |
+| **SDG 16** — Justice & Strong Institutions | Ensures fairness in loan, legal, and government AI decisions |
 
 ---
 
-## What Makes FairLens Novel
+## 💡 What Makes FairLens Novel
 
-Most fairness tools (IBM AI Fairness 360, Google's What-If Tool) are built for data scientists. FairLens is the first bias auditor designed for **non-technical decision-makers** — HR managers, hospital administrators, loan officers — with reports in their own language.
+Every existing bias tool was built for data scientists. FairLens is the **first bias auditor where the primary output is a plain-language narrative in the user's own language** — readable and actionable by non-technical decision-makers.
 
-The combination of:
-- Multilingual plain-English (plain-language) reports via Gemini
-- Multilingual *dataset* column detection (जाति, جنس, Geschlecht all detected as "caste/gender")
-- RTL rendering for Arabic
-- One-click debiasing
+**Unique combination not found in any existing tool:**
 
-...does not exist in any current open-source or commercial fairness tool.
+✅ Multilingual AI-generated reports (natively written, not translated)  
+✅ Sensitive column detection across non-English datasets (Hindi, Arabic, Swahili)  
+✅ RTL layout for Arabic  
+✅ Secure backend proxy — Gemini API key never exposed to browser  
+✅ One-click debiasing with live before/after score comparison  
+✅ Zero ML expertise required  
+
+---
+
+## 👥 Team
+
+Built for **Google Solution Challenge 2025** by GDSC members committed to making AI systems fairer for everyone.
 
 ---
 
-## Recent Updates (v1.1)
+## 📄 License
 
-### ✅ Fixed & Improved
-- **Production Deployment**: Frontend on Netlify + Backend on Render
-- **CORS Configuration**: Proper cross-origin handling for frontend-backend communication
-- **JSON Serialization**: Handle NaN/Inf values in bias metrics (prevents 500 errors)
-- **Dynamic Port Support**: Backend respects `PORT` environment variable for Render
-- **Environment Variables**: Centralized configuration for production deployments
-- **Hardcoded Localhost Removal**: All API calls now use configurable endpoints
-
-### 📚 Documentation
-- Added comprehensive deployment guide for Netlify + Render
-- Added environment variable reference
-- Added CORS troubleshooting guide
-- Added deployment troubleshooting section
-
-### 🔧 Technical Changes
-- `src/pages/UploadPage.jsx`: Replaced hardcoded localhost with `uploadDataset()` API utility
-- `backend/main.py`: Improved CORS origin parsing (strips whitespace)
-- `backend/Dockerfile`: Dynamic port support via `PORT` env var
-- `backend/models/schemas.py`: Added validators to clean NaN/Inf float values
-- `.env`: Updated `VITE_API_URL` for production backend
+MIT License — see [LICENSE](LICENSE) for details.
 
 ---
+
+<div align="center">
+
+**FairLens** · Google Solution Challenge 2025 · SDG 10: Reduced Inequalities
+
+*Making AI fairness accessible to everyone, in every language.*
+
+⭐ Star this repo if you found it useful!
+
+</div>
