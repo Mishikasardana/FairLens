@@ -1,6 +1,15 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Dict, Any
 from enum import Enum
+import math
+
+
+def clean_float(value):
+    """Convert NaN and Inf to None"""
+    if isinstance(value, float):
+        if math.isnan(value) or math.isinf(value):
+            return None
+    return value
 
 
 class ColumnRole(str, Enum):
@@ -42,14 +51,19 @@ class AuditRequest(BaseModel):
 class GroupStats(BaseModel):
     group: str
     count: int
-    positive_rate: float
+    positive_rate: Optional[float] = None
     total_positive: int
+
+    @field_validator('positive_rate', mode='before')
+    @classmethod
+    def clean_positive_rate(cls, v):
+        return clean_float(v)
 
 
 class FindingDetail(BaseModel):
     attribute: str
     metric: str
-    value: float
+    value: Optional[float] = None
     severity: SeverityLevel
     favored_group: Optional[str] = None
     disadvantaged_group: Optional[str] = None
@@ -57,11 +71,21 @@ class FindingDetail(BaseModel):
     threshold_used: Optional[float] = None
     interpretation: Optional[str] = None
 
+    @field_validator('value', 'threshold_used', mode='before')
+    @classmethod
+    def clean_floats(cls, v):
+        return clean_float(v)
+
 
 class ShapFeature(BaseModel):
     feature: str
-    importance: float
+    importance: Optional[float] = None
     correlation_with_sensitive: Optional[float] = None
+
+    @field_validator('importance', 'correlation_with_sensitive', mode='before')
+    @classmethod
+    def clean_floats(cls, v):
+        return clean_float(v)
 
 
 class AuditResult(BaseModel):
@@ -97,9 +121,14 @@ class DebiasRequest(BaseModel):
 class BeforeAfterMetric(BaseModel):
     attribute: str
     metric: str
-    before: float
-    after: float
-    improvement_pct: float
+    before: Optional[float] = None
+    after: Optional[float] = None
+    improvement_pct: Optional[float] = None
+
+    @field_validator('before', 'after', 'improvement_pct', mode='before')
+    @classmethod
+    def clean_floats(cls, v):
+        return clean_float(v)
 
 
 class DebiasResult(BaseModel):
@@ -145,4 +174,9 @@ class DetectColumnsResult(BaseModel):
     outcome: List[str]
     feature: List[str]
     reasoning: str
-    confidence: float
+    confidence: Optional[float] = None
+
+    @field_validator('confidence', mode='before')
+    @classmethod
+    def clean_confidence(cls, v):
+        return clean_float(v)
