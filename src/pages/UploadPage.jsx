@@ -44,14 +44,7 @@ export default function UploadPage({ onAuditReady, apiKey, reportLang }) {
         try {
           setDetecting(true)
           // First upload to get dataset ID for detection
-          const formData = new FormData()
-          formData.append('file', f)
-          const uploadResponse = await fetch('http://localhost:8000/api/dataset/upload', {
-            method: 'POST',
-            body: formData
-          })
-          if (!uploadResponse.ok) throw new Error('Upload failed')
-          const uploadData = await uploadResponse.json()
+          const uploadData = await uploadDataset(f)
           setDatasetId(uploadData.dataset_id)
           
           // Now detect columns
