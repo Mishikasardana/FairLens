@@ -1,7 +1,7 @@
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-pro:generateContent'
+const BACKEND_URL = 'https://fairlens-1.onrender.com/'  // replace with your actual Render URL
 
 export async function callGemini(prompt, apiKey) {
-  const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+  const response = await fetch(`${BACKEND_URL}generate-content`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
